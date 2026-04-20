@@ -1,10 +1,19 @@
 import express from "express";
-import { getConnection } from "./config/db.js"
 import dotenv from 'dotenv'
+import cors from 'cors'
+import ProductosR from './routes/ProductosRoutes.js'
+
+
 dotenv.config()
-const app = express()
 const PORT = process.env.PORT
-app.listen(PORT,()=>{
-    getConnection()
-    console.log(`Servidor corriendo en el puerto ${PORT}`)
+
+const app = express()
+
+app.use(cors())
+app.use(express.urlencoded({extended: true}))
+
+app.use("/api", ProductosR)
+
+app.listen(PORT, ()=>{
+    console.log(`Conectados a traves del puerto: ${PORT}`)
 })

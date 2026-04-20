@@ -2,7 +2,7 @@ import sql from 'mssql'
 import dotenv from 'dotenv'
 dotenv.config()
 
-const stringConnection = {
+const stringCon = {
 
     user: process.env.USER,
     password: process.env.PASSWORD,
@@ -13,15 +13,14 @@ const stringConnection = {
     }
 }
 
-export async function getConnection(){
-
-    try {
-
-        let conn = await sql.connect(stringConnection)
-        console.log('Conexión exitosa a la base de datos')
+const poolConnect = new sql.ConnectionPool(stringCon)
+    .connect()
+    .then(conn =>{
+        console.log('Conexión a la base de datos establecida')
         return conn
-
-    } catch (error) {
+    })
+    .catch(error =>{
         console.error(`Error al conectar a la base de datos: ${error}`)
-    }
-}
+    })
+
+    export { sql, poolConnect }
