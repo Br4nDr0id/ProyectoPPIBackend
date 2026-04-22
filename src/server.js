@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from 'dotenv'
 import cors from 'cors'
 import ProductosR from './routes/ProductosRoutes.js'
+import ComprasR from './routes/ComprasRoutes.js'
 
 
 dotenv.config()
@@ -13,6 +14,8 @@ app.use(cors())
 app.use(express.urlencoded({extended: true}))
 
 app.use("/api", ProductosR)
+
+app.use("/api", ComprasR)
 
 app.listen(PORT, ()=>{
     console.log(`Conectados a traves del puerto: ${PORT}`)
