@@ -17,6 +17,7 @@ const poolConnect = new sql.ConnectionPool(stringCon)
     .connect()
     .then(conn =>{
         console.log('Conexión a la base de datos establecida')
+        console.log('Base de datos:', process.env.DATABASE)
         return conn
     })
     .catch(error =>{
