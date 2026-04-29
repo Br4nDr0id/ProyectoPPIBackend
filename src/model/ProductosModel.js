@@ -23,8 +23,8 @@ const obtenerProductoPorId = async (id) => {
     try {
         const con = await poolConnect
         const result = await con.request()
-            .input('id_producto', sql.Int, id) // parámetro seguro contra SQL injection
-            .query('EXEC sp_obtener_producto')
+            .input('pid', sql.Int, id) // parámetro seguro contra SQL injection
+            .query(`EXEC sp_obtener_producto @id_producto= @pid`)
         return result.recordset[0] // retorna el primer resultado o undefined
     } catch (error) {
         throw error
