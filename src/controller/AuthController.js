@@ -3,7 +3,7 @@
 
 import bcrypt  from 'bcryptjs'
 import jwt     from 'jsonwebtoken'
-import { buscarPorCorreo, existeCorreo, crearUsuario } from '../model/UsuariosModel.js'
+import { buscarPorCorreo, existeCorreo, crearUsuario, obtenerUsuarioPorId, actualizarUsuario, eliminarUsuario } from '../model/UsuariosModel.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'markettdea_secret_key'
 
@@ -106,4 +106,64 @@ const registro = async (req, res) => {
   }
 }
 
-export { login, registro }
+// ── OBTENER PERFIL DE USUARIO ─────────────────────────────
+// GET /api/auth/perfil
+// Usa el ID del token JWT para obtener los datos del usuario logueado
+const getPerfil = async (req, res) => {
+  try {
+    const id_usuario = req.usuario.id_usuario
+    const usuario = await obtenerUsuarioPorId(id_usuario)
+
+    if (!usuario) {
+      return res.status(404).json({ mensaje: 'Usuario no encontrado.' })
+    }
+
+    // No devolver contraseña
+    const { contrasena, ...usuarioSinContrasena } = usuario
+    return res.status(200).json({ usuario: usuarioSinContrasena })
+
+  } catch (error) {
+    console.error('Error en getPerfil:', error)
+    return res.status(500).json({ mensaje: 'Error interno del servidor.' })
+  }
+}
+
+// ── ACTUALIZAR PERFIL DE USUARIO ─────────────────────────
+// PUT /api/auth/perfil
+// Permite actualizar nombre, apellido, teléfono, carrera, semestre
+const putPerfil = async (req, res) => {
+  try {
+    const id_usuario = req.usuario.id_usuario
+    const { nombre, apellido, telefono, carrera, semestre } = req.body
+
+    // Validar que al menos un campo se proporcione
+    if (!nombre && !apellido && !telefono && !carrera && semestre === undefined) {
+      return res.status(400).json({ mensaje: 'Debes proporcionar al menos un campo para actualizar.' })
+    }
+
+    await actualizarUsuario(id_usuario, { nombre, apellido, telefono, carrera, semestre })
+    return res.status(200).json({ mensaje: 'Perfil actualizado exitosamente.' })
+
+  } catch (error) {
+    console.error('Error en putPerfil:', error)
+    return res.status(500).json({ mensaje: 'Error interno del servidor.' })
+  }
+}
+
+// ── ELIMINAR CUENTA DE USUARIO ───────────────────────────
+// DELETE /api/auth/perfil
+// Permite al usuario eliminar su propia cuenta
+const deletePerfil = async (req, res) => {
+  try {
+    const id_usuario = req.usuario.id_usuario
+
+    await eliminarUsuario(id_usuario)
+    return res.status(200).json({ mensaje: 'Cuenta eliminada exitosamente.' })
+
+  } catch (error) {
+    console.error('Error en deletePerfil:', error)
+    return res.status(500).json({ mensaje: 'Error interno del servidor.' })
+  }
+}
+
+export { login, registro, getPerfil, putPerfil, deletePerfil }

@@ -1,4 +1,4 @@
-import{getProductoPorId, getProductos,getCategorias, postProducto } from '../controller/ProductosController.js'
+import{getProductoPorId, getProductos,getCategorias, postProducto, putProducto, deleteProducto } from '../controller/ProductosController.js'
 
 import express from 'express'
 
@@ -15,6 +15,8 @@ router.get("/categorias",     getCategorias)
 
 // Rutas protegidas — requieren token JWT
 router.post("/productos", verificarToken, postProducto)
+router.put("/productos/:id", verificarToken, putProducto)
+router.delete("/productos/:id", verificarToken, deleteProducto)
 
 
 export default router

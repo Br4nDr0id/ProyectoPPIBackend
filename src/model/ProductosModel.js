@@ -73,5 +73,48 @@ const crearProducto = async (datos) => {
   }
 }
 
+// ── Actualizar producto ─────────────────────────────────────
+// Recibe el ID del producto y los datos a actualizar.
+// Actualiza los campos proporcionados en la base de datos.
+const actualizarProducto = async (id, datos) => {
+  try {
+    const { id_categoria, nombre, descripcion, precio, stock, imagen_url } = datos
+    const con = await poolConnect
+    await con.request()
+      .input('pid',          sql.Int,          id)
+      .input('id_categoria', sql.Int,          id_categoria)
+      .input('nombre',       sql.VarChar,      nombre)
+      .input('descripcion',  sql.VarChar,      descripcion)
+      .input('precio',       sql.Decimal,      precio)
+      .input('stock',        sql.Int,          stock)
+      .input('imagen_url',   sql.VarChar,      imagen_url || null)
+      .query(`EXEC sp_actualizar_producto 
+        @id_producto=@pid, 
+        @id_categoria=@id_categoria, 
+        @nombre=@nombre, 
+        @descripcion=@descripcion, 
+        @precio=@precio, 
+        @stock=@stock, 
+        @imagen_url=@imagen_url`)
+  } catch (error) {
+    console.error('Error en actualizarProducto:', error.message)
+    throw error
+  }
+}
 
-export { listarProductos, obtenerProductoPorId, listarCategorias, crearProducto }
+// ── Eliminar producto ───────────────────────────────────────
+// Recibe el ID del producto y lo elimina de la base de datos.
+const eliminarProducto = async (id) => {
+  try {
+    const con = await poolConnect
+    await con.request()
+      .input('pid', sql.Int, id)
+      .query('EXEC sp_eliminar_producto @id_producto=@pid')
+  } catch (error) {
+    console.error('Error en eliminarProducto:', error.message)
+    throw error
+  }
+}
+
+
+export { listarProductos, obtenerProductoPorId, listarCategorias, crearProducto, actualizarProducto, eliminarProducto }

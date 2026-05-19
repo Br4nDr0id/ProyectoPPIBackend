@@ -1,4 +1,4 @@
-import {listarProductos, obtenerProductoPorId, listarCategorias, crearProducto } from '../model/ProductosModel.js'
+import {listarProductos, obtenerProductoPorId, listarCategorias, crearProducto, actualizarProducto, eliminarProducto } from '../model/ProductosModel.js'
 
 const getProductos = async (req, res) => {
     try{
@@ -67,6 +67,53 @@ const postProducto = async (req, res) => {
     }
 }
 
+// ── PUT /api/productos/:id ───────────────────────────────────
+// Actualiza un producto existente. Solo el vendedor puede actualizar su producto.
+const putProducto = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { id_categoria, nombre, descripcion, precio, stock, imagen_url } = req.body
+        const id_vendedor = req.usuario.id_usuario  // viene del middleware JWT
 
-export { getProductos, getProductoPorId, getCategorias, postProducto }
+        // Verificar que el producto existe y pertenece al vendedor (esto debería hacerse en el modelo o middleware)
+        const producto = await obtenerProductoPorId(id)
+        if (!producto) {
+            return res.status(404).json({ success: false, message: 'Producto no encontrado.' })
+        }
+        if (producto.id_vendedor !== id_vendedor) {
+            return res.status(403).json({ success: false, message: 'No tienes permiso para actualizar este producto.' })
+        }
+
+        await actualizarProducto(id, { id_categoria, nombre, descripcion, precio, stock, imagen_url })
+        res.status(200).json({ success: true, message: 'Producto actualizado exitosamente.' })
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al actualizar el producto.', error: error.message })
+    }
+}
+
+// ── DELETE /api/productos/:id ────────────────────────────────
+// Elimina un producto. Solo el vendedor puede eliminar su producto.
+const deleteProducto = async (req, res) => {
+    try {
+        const { id } = req.params
+        const id_vendedor = req.usuario.id_usuario  // viene del middleware JWT
+
+        // Verificar que el producto existe y pertenece al vendedor
+        const producto = await obtenerProductoPorId(id)
+        if (!producto) {
+            return res.status(404).json({ success: false, message: 'Producto no encontrado.' })
+        }
+        if (producto.id_vendedor !== id_vendedor) {
+            return res.status(403).json({ success: false, message: 'No tienes permiso para eliminar este producto.' })
+        }
+
+        await eliminarProducto(id)
+        res.status(200).json({ success: true, message: 'Producto eliminado exitosamente.' })
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al eliminar el producto.', error: error.message })
+    }
+}
+
+
+export { getProductos, getProductoPorId, getCategorias, postProducto, putProducto, deleteProducto }
 
