@@ -1,4 +1,4 @@
-import {listarProductos, obtenerProductoPorId, listarCategorias, crearProducto, actualizarProducto, eliminarProducto } from '../model/ProductosModel.js'
+import {listarProductos, obtenerProductoPorId, listarCategorias, crearProducto, actualizarProducto, eliminarProducto, listarMisProductos, obtenerVendedorProducto } from '../model/ProductosModel.js'
 
 const getProductos = async (req, res) => {
     try{
@@ -51,14 +51,20 @@ const getCategorias = async (req, res) => {
 const postProducto = async (req, res) => {
 
     try {
-        
-        const { id_categoria, nombre, descripcion, precio, stock, imagen_url } = req.body
+
+        const { id_categoria, nombre, descripcion, precio, stock } = req.body
         const id_vendedor = req.usuario.id_usuario  // viene del middleware JWT
 
         if (!nombre || !descripcion || !precio || !stock || !id_categoria) {
             return res.status(400).json({ success: false, message: 'Todos los campos son requeridos.' })
         }
 
+        // Si se subió un archivo lo usa; si no, queda null
+        let imagen_url = null
+        if (req.file) {
+            const base = `${req.protocol}://${req.get('host')}`
+            imagen_url = `${base}/uploads/${req.file.filename}`
+        }
 
         await crearProducto({ id_vendedor, id_categoria, nombre, descripcion, precio, stock, imagen_url })
         res.status(201).json({ success: true, message: 'Producto creado exitosamente.' })
@@ -72,16 +78,25 @@ const postProducto = async (req, res) => {
 const putProducto = async (req, res) => {
     try {
         const { id } = req.params
-        const { id_categoria, nombre, descripcion, precio, stock, imagen_url } = req.body
-        const id_vendedor = req.usuario.id_usuario  // viene del middleware JWT
+        const { id_categoria, nombre, descripcion, precio, stock } = req.body
+        const id_vendedor = req.usuario.id_usuario
 
-        // Verificar que el producto existe y pertenece al vendedor (esto debería hacerse en el modelo o middleware)
-        const producto = await obtenerProductoPorId(id)
-        if (!producto) {
+        // Consulta directa al campo id_vendedor para evitar depender del SP
+        const propietario = await obtenerVendedorProducto(id)
+        if (!propietario) {
             return res.status(404).json({ success: false, message: 'Producto no encontrado.' })
         }
-        if (producto.id_vendedor !== id_vendedor) {
+        if (Number(propietario.id_vendedor) !== Number(id_vendedor)) {
             return res.status(403).json({ success: false, message: 'No tienes permiso para actualizar este producto.' })
+        }
+
+        // Si se subió un archivo usa la nueva ruta; si no, usa la URL que envió el frontend
+        let imagen_url
+        if (req.file) {
+            const base = `${req.protocol}://${req.get('host')}`
+            imagen_url = `${base}/uploads/${req.file.filename}`
+        } else {
+            imagen_url = req.body.imagen_url || null
         }
 
         await actualizarProducto(id, { id_categoria, nombre, descripcion, precio, stock, imagen_url })
@@ -91,19 +106,30 @@ const putProducto = async (req, res) => {
     }
 }
 
+// ── GET /api/mis-productos ───────────────────────────────────
+// Devuelve solo los productos publicados por el usuario logueado.
+const getMisProductos = async (req, res) => {
+    try {
+        const id_vendedor = req.usuario.id_usuario
+        const productos = await listarMisProductos(id_vendedor)
+        res.status(200).json({ success: true, data: productos })
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error al obtener tus productos.', error: error.message })
+    }
+}
+
 // ── DELETE /api/productos/:id ────────────────────────────────
 // Elimina un producto. Solo el vendedor puede eliminar su producto.
 const deleteProducto = async (req, res) => {
     try {
         const { id } = req.params
-        const id_vendedor = req.usuario.id_usuario  // viene del middleware JWT
+        const id_vendedor = req.usuario.id_usuario
 
-        // Verificar que el producto existe y pertenece al vendedor
-        const producto = await obtenerProductoPorId(id)
-        if (!producto) {
+        const propietario = await obtenerVendedorProducto(id)
+        if (!propietario) {
             return res.status(404).json({ success: false, message: 'Producto no encontrado.' })
         }
-        if (producto.id_vendedor !== id_vendedor) {
+        if (Number(propietario.id_vendedor) !== Number(id_vendedor)) {
             return res.status(403).json({ success: false, message: 'No tienes permiso para eliminar este producto.' })
         }
 
@@ -115,5 +141,5 @@ const deleteProducto = async (req, res) => {
 }
 
 
-export { getProductos, getProductoPorId, getCategorias, postProducto, putProducto, deleteProducto }
+export { getProductos, getProductoPorId, getCategorias, postProducto, putProducto, deleteProducto, getMisProductos }
 

@@ -117,4 +117,32 @@ const eliminarProducto = async (id) => {
 }
 
 
-export { listarProductos, obtenerProductoPorId, listarCategorias, crearProducto, actualizarProducto, eliminarProducto }
+// ── Consulta directa para verificar propietario ──────────────
+// Retorna { id_vendedor } del producto o undefined si no existe.
+// Se usa en PUT y DELETE para verificar permisos sin depender del SP.
+const obtenerVendedorProducto = async (id_producto) => {
+  try {
+    const con = await poolConnect
+    const result = await con.request()
+      .input('pid', sql.Int, id_producto)
+      .query('SELECT id_vendedor FROM Productos WHERE id_producto = @pid')
+    return result.recordset[0]
+  } catch (error) {
+    throw error
+  }
+}
+
+// ── Listar productos del vendedor logueado ───────────────────
+const listarMisProductos = async (id_vendedor) => {
+  try {
+    const con = await poolConnect
+    const result = await con.request()
+      .input('id_vendedor', sql.Int, id_vendedor)
+      .query('EXEC sp_mis_productos @id_vendedor=@id_vendedor')
+    return result.recordset
+  } catch (error) {
+    throw error
+  }
+}
+
+export { listarProductos, obtenerProductoPorId, listarCategorias, crearProducto, actualizarProducto, eliminarProducto, listarMisProductos, obtenerVendedorProducto }
